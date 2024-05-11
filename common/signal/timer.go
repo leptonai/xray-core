@@ -61,7 +61,7 @@ func (t *ActivityTimer) finish() {
 		t.onTimeout = nil
 	}
 	if t.checkTask != nil {
-		log.Println("ActivityTimer closing checkTask")
+		log.Println("ActivityTimer closing checkTask", t.checkTask.Interval)
 		t.checkTask.Close()
 		t.checkTask = nil
 	}
@@ -103,6 +103,7 @@ func CancelAfterInactivity(ctx context.Context, cancel context.CancelFunc, timeo
 		updated:   make(chan struct{}, 1),
 		onTimeout: cancel,
 	}
+	log.Println("ActivityTimer CancelAfterInactivity", timeout)
 	timer.SetTimeout(timeout)
 	return timer
 }

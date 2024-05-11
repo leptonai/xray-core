@@ -317,7 +317,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection s
 
 			ctx, cancel := context.WithCancel(ctx)
 			nCancel := func () {
-				golog.Printf("inbound, ActivityTimer canceling, line 319; idle timeout: %d", sessionPolicy.Timeouts.ConnectionIdle)
+				golog.Printf("inbound, ActivityTimer canceling, line 319")
 				cancel()
 			}
 			timer := signal.CancelAfterInactivity(ctx, nCancel, sessionPolicy.Timeouts.ConnectionIdle)
@@ -506,8 +506,9 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection s
 
 	sessionPolicy = h.policyManager.ForLevel(request.User.Level)
 	ctx, cancel := context.WithCancel(ctx)
+	connIdle
 	nCancel := func () {
-		golog.Printf("inbound, ActivityTimer canceling, line 505; idle timeout: %d", sessionPolicy.Timeouts.ConnectionIdle)
+		golog.Printf("inbound, ActivityTimer canceling, line 505")
 		cancel()
 	}
 	timer := signal.CancelAfterInactivity(ctx, nCancel, sessionPolicy.Timeouts.ConnectionIdle)
