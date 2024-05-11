@@ -315,6 +315,10 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection s
 			}
 
 			ctx, cancel := context.WithCancel(ctx)
+			cancel = func () {
+				log.Println("inbound, ActivityTimer canceling, line 319")
+				cancel()
+			}
 			timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)
 			ctx = policy.ContextWithBufferPolicy(ctx, sessionPolicy.Buffer)
 
@@ -501,6 +505,10 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection s
 
 	sessionPolicy = h.policyManager.ForLevel(request.User.Level)
 	ctx, cancel := context.WithCancel(ctx)
+	cancel = func () {
+		log.Println("inbound, ActivityTimer canceling, line 505")
+		cancel()
+	}
 	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)
 	ctx = policy.ContextWithBufferPolicy(ctx, sessionPolicy.Buffer)
 
