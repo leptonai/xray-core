@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 	"time"
+	"log"
 
 	"github.com/xtls/xray-core/common"
 	"github.com/xtls/xray-core/common/task"

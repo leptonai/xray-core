@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 	"unsafe"
+	golog "log"
 
 	"github.com/xtls/xray-core/common"
 	"github.com/xtls/xray-core/common/buf"
@@ -315,11 +316,11 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection s
 			}
 
 			ctx, cancel := context.WithCancel(ctx)
-			cancel = func () {
-				log.Println("inbound, ActivityTimer canceling, line 319")
+			nCancel := func () {
+				golog.Printf("inbound, ActivityTimer canceling, line 319; idle timeout: %d", sessionPolicy.Timeouts.ConnectionIdle)
 				cancel()
 			}
-			timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)
+			timer := signal.CancelAfterInactivity(ctx, nCancel, sessionPolicy.Timeouts.ConnectionIdle)
 			ctx = policy.ContextWithBufferPolicy(ctx, sessionPolicy.Buffer)
 
 			var conn net.Conn
@@ -505,11 +506,11 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection s
 
 	sessionPolicy = h.policyManager.ForLevel(request.User.Level)
 	ctx, cancel := context.WithCancel(ctx)
-	cancel = func () {
-		log.Println("inbound, ActivityTimer canceling, line 505")
+	nCancel := func () {
+		golog.Printf("inbound, ActivityTimer canceling, line 505; idle timeout: %d", sessionPolicy.Timeouts.ConnectionIdle)
 		cancel()
 	}
-	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)
+	timer := signal.CancelAfterInactivity(ctx, nCancel, sessionPolicy.Timeouts.ConnectionIdle)
 	ctx = policy.ContextWithBufferPolicy(ctx, sessionPolicy.Buffer)
 
 	link, err := dispatcher.Dispatch(ctx, request.Destination())

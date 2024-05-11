@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"time"
 	"unsafe"
+	"log"
 
 	utls "github.com/refraction-networking/utls"
 	"github.com/xtls/xray-core/common"
@@ -175,7 +176,7 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 	sessionPolicy := h.policyManager.ForLevel(request.User.Level)
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, func() {
-		log.Info("Outbound ActivityTimer canceling, line 178")
+		log.Println("Outbound ActivityTimer canceling, line 178")
 		cancel()
 		if newCancel != nil {
 			newCancel()
