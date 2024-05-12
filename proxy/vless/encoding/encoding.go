@@ -189,6 +189,7 @@ func XtlsRead(reader buf.Reader, writer buf.Writer, timer signal.ActivityUpdater
 			}
 			buffer, err := reader.ReadMultiBuffer()
 			if !buffer.IsEmpty() {
+				newError("XtlsRead update").WriteToLog(session.ExportIDToError(ctx))
 				timer.Update()
 				if trafficState.ReaderSwitchToDirectCopy {
 					// XTLS Vision processes struct TLS Conn's input and rawInput
@@ -237,6 +238,7 @@ func XtlsWrite(reader buf.Reader, writer buf.Writer, timer signal.ActivityUpdate
 				if ct != nil {
 					ct.Add(int64(buffer.Len()))
 				}
+				newError("XtlsWrite update").WriteToLog(session.ExportIDToError(ctx))
 				timer.Update()
 				if werr := writer.WriteMultiBuffer(buffer); werr != nil {
 					return werr

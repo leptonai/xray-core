@@ -514,8 +514,10 @@ func CopyRawConnIfExist(ctx context.Context, readerConn net.Conn, writerConn net
 						statWriter.Counter.Add(w) // user stats
 					}
 					if err != nil && errors.Cause(err) != io.EOF {
+						newError("CopyRawConn error", err).WriteToLog(session.ExportIDToError(ctx))
 						return err
 					}
+					newError("CopyRawConn exit without error").WriteToLog(session.ExportIDToError(ctx))
 					return nil
 				}
 				buffer, err := reader.ReadMultiBuffer()
