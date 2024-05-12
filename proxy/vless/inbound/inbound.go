@@ -506,9 +506,10 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection s
 
 	sessionPolicy = h.policyManager.ForLevel(request.User.Level)
 	ctx, cancel := context.WithCancel(ctx)
-	connIdle
+
 	nCancel := func () {
 		golog.Printf("inbound, ActivityTimer canceling, line 505")
+		newError("inbound ActivityTimer canceling line 505").WriteToLog(session.ExportIDToError(ctx))
 		cancel()
 	}
 	timer := signal.CancelAfterInactivity(ctx, nCancel, sessionPolicy.Timeouts.ConnectionIdle)

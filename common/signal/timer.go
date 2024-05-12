@@ -36,6 +36,9 @@ func (t *ActivityTimer) Update() {
 
 func (t *ActivityTimer) check() error {
 	log.Println("ActivityTimer checking")
+	if t.checkTask != nil {
+		log.Println("checking with interval", t.checkTask.Interval)
+	}
 
 	select {
 	case <-t.updated:
