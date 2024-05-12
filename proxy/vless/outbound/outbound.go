@@ -241,7 +241,9 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 				}
 			}
 			ctx1 := session.ContextWithOutbound(ctx, nil) // TODO enable splice
+			newError("XtlsWrite start").WriteToLog(session.ExportIDToError(ctx))
 			err = encoding.XtlsWrite(clientReader, serverWriter, timer, conn, trafficState, ctx1)
+			newError("XtlsWrite ends", err).WriteToLog(session.ExportIDToError(ctx))
 		} else {
 			// from clientReader.ReadMultiBuffer to serverWriter.WriteMultiBufer
 			err = buf.Copy(clientReader, serverWriter, buf.UpdateActivity(timer))
@@ -279,7 +281,9 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 		}
 
 		if requestAddons.Flow == vless.XRV {
+			newError("XtlsRead start").WriteToLog(session.ExportIDToError(ctx))
 			err = encoding.XtlsRead(serverReader, clientWriter, timer, conn, input, rawInput, trafficState, ctx)
+			newError("XtlsRead end", err).WriteToLog(session.ExportIDToError(ctx))
 		} else {
 			// from serverReader.ReadMultiBuffer to clientWriter.WriteMultiBufer
 			err = buf.Copy(serverReader, clientWriter, buf.UpdateActivity(timer))
