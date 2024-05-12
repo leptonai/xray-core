@@ -483,7 +483,15 @@ func CopyRawConnIfExist(ctx context.Context, readerConn net.Conn, writerConn net
 					//runtime.Gosched() // necessary
 					time.Sleep(time.Millisecond) // without this, there will be a rare ssl error for freedom splice
 
-					timer.Update()
+					ticker := time.NewTicker(10 * time.Second)
+					defer ticker.Stop()
+
+					go func() {
+						for range ticker.C {
+							timer.Update()
+						}
+					}()
+
 					w, err := tc.ReadFrom(readerConn)
 					if readCounter != nil {
 						readCounter.Add(w) // outbound stats
