@@ -484,11 +484,20 @@ func CopyRawConnIfExist(ctx context.Context, readerConn net.Conn, writerConn net
 					time.Sleep(time.Millisecond) // without this, there will be a rare ssl error for freedom splice
 
 					ticker := time.NewTicker(10 * time.Second)
-					defer ticker.Stop()
+					done := make(chan struct{})
+					defer func() {
+						ticker.Stop()
+						close(done)
+					}()
 
 					go func() {
-						for range ticker.C {
-							timer.Update()
+						for {
+							select {
+							case <-done:
+								return
+							case <-ticker.C:
+								timer.Update()
+							}
 						}
 					}()
 
