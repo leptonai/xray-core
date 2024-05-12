@@ -495,6 +495,7 @@ func CopyRawConnIfExist(ctx context.Context, readerConn net.Conn, writerConn net
 						for {
 							select {
 							case <-done:
+								newError("Splice update done").WriteToLog(session.ExportIDToError(ctx))
 								return
 							case <-ticker.C:
 								newError("Splice update tick").WriteToLog(session.ExportIDToError(ctx))
