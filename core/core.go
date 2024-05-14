@@ -33,7 +33,7 @@ var (
 // Version returns Xray's version as a string, in the form of "x.y.z" where x, y and z are numbers.
 // ".z" part may be omitted in regular releases.
 func Version() string {
-	return fmt.Sprintf("%v.%v.%v-alpha2", Version_x, Version_y, Version_z)
+	return fmt.Sprintf("%v.%v.%v-alpha5", Version_x, Version_y, Version_z)
 }
 
 // VersionStatement returns a list of strings representing the full version info.

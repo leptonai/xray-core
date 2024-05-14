@@ -222,10 +222,37 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn st
 
 	responseDone := func() error {
 		defer timer.SetTimeout(plcy.Timeouts.UplinkOnly)
+		// To fix client connection timeout issue:
+		// client side uses vless outbound and its reponse type uses splice directly copy to proxy user
+		// it means the inbound object timer won't be updated during response transportation and it results in context cancellation, which likely leads to premature connection release
+		// By
+		ticker := time.NewTicker(10 * time.Second)
+		done := make(chan struct{})
+		defer func() {
+			ticker.Stop()
+			close(done)
+		}()
+		newError("dokodemo keep alive set up").WriteToLog(session.ExportIDToError(ctx))
+		go func() {
+			c := 0
+			for {
+				select {
+				case <-done:
+					newError("dokodemo keep alive done, after tick count ", c).WriteToLog(session.ExportIDToError(ctx))
+					return
+				case <-ticker.C:
+					c++
+					timer.Update()
+				}
+			}
+		}()
 
+		newError("dokodemo response path buf copy").WriteToLog(session.ExportIDToError(ctx))
 		if err := buf.Copy(link.Reader, writer, buf.UpdateActivity(timer)); err != nil {
+			newError("dokodemo response path buf copy completed error", err).WriteToLog(session.ExportIDToError(ctx))
 			return newError("failed to transport response").Base(err)
 		}
+		newError("dokodemo response path buf copy completed without error").WriteToLog(session.ExportIDToError(ctx))
 		return nil
 	}
 

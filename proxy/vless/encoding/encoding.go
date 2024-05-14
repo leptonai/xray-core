@@ -241,10 +241,10 @@ func XtlsWrite(reader buf.Reader, writer buf.Writer, timer signal.ActivityUpdate
 		for {
 			select {
 			case <-done:
-				newError("XtlsWrite update done").WriteToLog(session.ExportIDToError(ctx))
+				newError("XtlsWrite keep alive ticker done").WriteToLog(session.ExportIDToError(ctx))
 				return
 			case <-ticker.C:
-				newError("XtlsWrite update tick").WriteToLog(session.ExportIDToError(ctx))
+				newError("XtlsWrite keep alive tick").WriteToLog(session.ExportIDToError(ctx))
 				timer.Update()
 			}
 		}
