@@ -6,10 +6,10 @@ import (
 	"bytes"
 	"context"
 	gotls "crypto/tls"
+	"log"
 	"reflect"
 	"time"
 	"unsafe"
-	"log"
 
 	utls "github.com/refraction-networking/utls"
 	"github.com/xtls/xray-core/common"
@@ -260,6 +260,7 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 	}
 
 	getResponse := func() error {
+		respCtx := proxy.AppendSpliceCallersInContext(ctx, "Vless.Outbound.Process.getResponse")
 		defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
 		responseAddons, err := encoding.DecodeResponseHeader(conn, request)
@@ -282,7 +283,7 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 
 		if requestAddons.Flow == vless.XRV {
 			newError("XtlsRead start").WriteToLog(session.ExportIDToError(ctx))
-			err = encoding.XtlsRead(serverReader, clientWriter, timer, conn, input, rawInput, trafficState, ctx)
+			err = encoding.XtlsRead(serverReader, clientWriter, timer, conn, input, rawInput, trafficState, respCtx)
 			newError("XtlsRead end", err).WriteToLog(session.ExportIDToError(ctx))
 		} else {
 			// from serverReader.ReadMultiBuffer to clientWriter.WriteMultiBufer
