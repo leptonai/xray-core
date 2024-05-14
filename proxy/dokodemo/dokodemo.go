@@ -232,14 +232,16 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn st
 			ticker.Stop()
 			close(done)
 		}()
-
+		newError("dokodemo keep alive set up").WriteToLog(session.ExportIDToError(ctx))
 		go func() {
+			c := 0
 			for {
 				select {
 				case <-done:
-					newError("dokodemo keep alive done").WriteToLog(session.ExportIDToError(ctx))
+					newError("dokodemo keep alive done, after tick count ", c).WriteToLog(session.ExportIDToError(ctx))
 					return
 				case <-ticker.C:
+					c++
 					timer.Update()
 				}
 			}
