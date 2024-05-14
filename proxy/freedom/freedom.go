@@ -222,7 +222,9 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 			if inbound := session.InboundFromContext(ctx); inbound != nil && inbound.Conn != nil && useSplice {
 				writeConn = inbound.Conn
 			}
-			return proxy.CopyRawConnIfExist(ctx, conn, writeConn, link.Writer, timer)
+			newError("freedom outbound CopyRawConn").WriteToLog(session.ExportIDToError(ctx))
+			spliceCtx := proxy.AppendSpliceCallersInContext(ctx, "Freedom.Process.responseDone")
+			return proxy.CopyRawConnIfExist(spliceCtx, conn, writeConn, link.Writer, timer)
 		}
 		reader := NewPacketReader(conn, UDPOverride)
 		if err := buf.Copy(reader, output, buf.UpdateActivity(timer)); err != nil {

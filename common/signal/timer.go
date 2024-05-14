@@ -22,20 +22,15 @@ type ActivityTimer struct {
 }
 
 func (t *ActivityTimer) Update() {
-	log.Println("ActivityTimer updating")
-
 	select {
 	case t.updated <- struct{}{}:
-		log.Println("ActivityTimer updated")
 	default:
-		log.Println("ActivityTimer already updated, skipping")
 	}
 
 	log.Println("ActivityTimer updating finished")
 }
 
 func (t *ActivityTimer) check() error {
-	log.Println("ActivityTimer checking")
 	if t.checkTask != nil {
 		log.Println("checking with interval", t.checkTask.Interval)
 	}
@@ -88,14 +83,11 @@ func (t *ActivityTimer) SetTimeout(timeout time.Duration) {
 	t.Lock()
 
 	if t.checkTask != nil {
-		log.Println("ActivityTimer SetTimeout, closing existing checkTask")
 		t.checkTask.Close()
 	}
 	t.checkTask = checkTask
 	t.Unlock()
 	t.Update()
-
-	log.Println("ActivityTimer SetTimeout, starting checkTask")
 	common.Must(checkTask.Start())
 
 	log.Println("ActivityTimer SetTimeout finished")

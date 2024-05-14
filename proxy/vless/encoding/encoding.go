@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"time"
 
 	"github.com/xtls/xray-core/common/buf"
 	"github.com/xtls/xray-core/common/errors"
@@ -175,6 +176,7 @@ func DecodeResponseHeader(reader io.Reader, request *protocol.RequestHeader) (*A
 
 // XtlsRead filter and read xtls protocol
 func XtlsRead(reader buf.Reader, writer buf.Writer, timer signal.ActivityUpdater, conn net.Conn, input *bytes.Reader, rawInput *bytes.Buffer, trafficState *proxy.TrafficState, ctx context.Context) error {
+	ctx = proxy.AppendSpliceCallersInContext(ctx, "XtlsRead")
 	err := func() error {
 		for {
 			if trafficState.ReaderSwitchToDirectCopy {
@@ -204,9 +206,12 @@ func XtlsRead(reader buf.Reader, writer buf.Writer, timer signal.ActivityUpdater
 						}
 					}
 				}
+				newError("XtlsRead WriteMultiBuffer").WriteToLog(session.ExportIDToError(ctx))
 				if werr := writer.WriteMultiBuffer(buffer); werr != nil {
+					newError("XtlsRead WriteMultiBuffer error", werr).WriteToLog(session.ExportIDToError(ctx))
 					return werr
 				}
+				newError("XtlsRead WriteMultiBuffer complete").WriteToLog(session.ExportIDToError(ctx))
 			}
 			if err != nil {
 				return err
@@ -221,10 +226,35 @@ func XtlsRead(reader buf.Reader, writer buf.Writer, timer signal.ActivityUpdater
 
 // XtlsWrite filter and write xtls protocol
 func XtlsWrite(reader buf.Reader, writer buf.Writer, timer signal.ActivityUpdater, conn net.Conn, trafficState *proxy.TrafficState, ctx context.Context) error {
+	// To fix server connection timeout issue
+	// Server side uses freedom as outbound and has splice enabled by default, however splice skips the inbound getResponse process and directly write to the client-server connection;
+	// it means the inbound object timer won't be updated during response transportation and it results in context cancellation, which likely leads to premature connection release
+	// By
+	ticker := time.NewTicker(10 * time.Second)
+	done := make(chan struct{})
+	defer func() {
+		ticker.Stop()
+		close(done)
+	}()
+
+	go func() {
+		for {
+			select {
+			case <-done:
+				newError("XtlsWrite update done").WriteToLog(session.ExportIDToError(ctx))
+				return
+			case <-ticker.C:
+				newError("XtlsWrite update tick").WriteToLog(session.ExportIDToError(ctx))
+				timer.Update()
+			}
+		}
+	}()
 	err := func() error {
 		var ct stats.Counter
 		for {
+			newError("XtlsWrite read multibuffer ").WriteToLog(session.ExportIDToError(ctx))
 			buffer, err := reader.ReadMultiBuffer()
+			newError("XtlsWrite completed reading multibuffer ").WriteToLog(session.ExportIDToError(ctx))
 			if trafficState.WriterSwitchToDirectCopy {
 				if inbound := session.InboundFromContext(ctx); inbound != nil && inbound.CanSpliceCopy == 2 {
 					inbound.CanSpliceCopy = 1 // force the value to 1, don't use setter
@@ -238,11 +268,13 @@ func XtlsWrite(reader buf.Reader, writer buf.Writer, timer signal.ActivityUpdate
 				if ct != nil {
 					ct.Add(int64(buffer.Len()))
 				}
-				newError("XtlsWrite update").WriteToLog(session.ExportIDToError(ctx))
+				newError("XtlsWrite update", buffer.Len()).WriteToLog(session.ExportIDToError(ctx))
 				timer.Update()
 				if werr := writer.WriteMultiBuffer(buffer); werr != nil {
+					newError("XtlsWrite err", werr).WriteToLog(session.ExportIDToError(ctx))
 					return werr
 				}
+				newError("XtlsWrite complete").WriteToLog(session.ExportIDToError(ctx))
 			}
 			if err != nil {
 				return err

@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"fmt"
 	"io"
 	"math/big"
 	"runtime"
@@ -54,7 +55,21 @@ const (
 	CommandPaddingContinue byte = 0x00
 	CommandPaddingEnd      byte = 0x01
 	CommandPaddingDirect   byte = 0x02
+
+	ContextSpliceCallerKey = "SPLICE_CALLER"
 )
+
+func GetSpliceCallersInContext(ctx context.Context) string {
+	c := ctx.Value(ContextSpliceCallerKey)
+	if c == nil {
+		return ""
+	}
+	return fmt.Sprintf("%v", c)
+}
+
+func AppendSpliceCallersInContext(ctx context.Context, newCaller string) context.Context {
+	return context.WithValue(ctx, ContextSpliceCallerKey, GetSpliceCallersInContext(ctx)+":"+newCaller)
+}
 
 // An Inbound processes inbound connections.
 type Inbound interface {
@@ -102,7 +117,7 @@ type TrafficState struct {
 	// reader link state
 	WithinPaddingBuffers     bool
 	ReaderSwitchToDirectCopy bool
-	RemainingCommand		 int32
+	RemainingCommand         int32
 	RemainingContent         int32
 	RemainingPadding         int32
 	CurrentCommand           int
@@ -215,7 +230,7 @@ func (w *VisionWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
 					w.trafficState.WriterSwitchToDirectCopy = true
 				}
 				var command byte = CommandPaddingContinue
-				if i == len(mb) - 1 {
+				if i == len(mb)-1 {
 					command = CommandPaddingEnd
 					if w.trafficState.EnableXtls {
 						command = CommandPaddingDirect
@@ -231,7 +246,7 @@ func (w *VisionWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
 				break
 			}
 			var command byte = CommandPaddingContinue
-			if i == len(mb) - 1 && !w.trafficState.IsPadding {
+			if i == len(mb)-1 && !w.trafficState.IsPadding {
 				command = CommandPaddingEnd
 				if w.trafficState.EnableXtls {
 					command = CommandPaddingDirect
@@ -338,11 +353,11 @@ func XtlsUnpadding(b *buf.Buffer, s *TrafficState, ctx context.Context) *buf.Buf
 			case 5:
 				s.CurrentCommand = int(data)
 			case 4:
-				s.RemainingContent = int32(data)<<8
+				s.RemainingContent = int32(data) << 8
 			case 3:
 				s.RemainingContent = s.RemainingContent | int32(data)
 			case 2:
-				s.RemainingPadding = int32(data)<<8
+				s.RemainingPadding = int32(data) << 8
 			case 1:
 				s.RemainingPadding = s.RemainingPadding | int32(data)
 				newError("Xtls Unpadding new block, content ", s.RemainingContent, " padding ", s.RemainingPadding, " command ", s.CurrentCommand).WriteToLog(session.ExportIDToError(ctx))
@@ -478,12 +493,12 @@ func CopyRawConnIfExist(ctx context.Context, readerConn net.Conn, writerConn net
 		if tc, ok := writerConn.(*net.TCPConn); ok && readerConn != nil && writerConn != nil && (runtime.GOOS == "linux" || runtime.GOOS == "android") {
 			for inbound.CanSpliceCopy != 3 {
 				if inbound.CanSpliceCopy == 1 {
-					newError("CopyRawConn splice").WriteToLog(session.ExportIDToError(ctx))
+					newError("CopyRawConn splice", GetSpliceCallersInContext(ctx)).WriteToLog(session.ExportIDToError(ctx))
 					statWriter, _ := writer.(*dispatcher.SizeStatWriter)
 					//runtime.Gosched() // necessary
 					time.Sleep(time.Millisecond) // without this, there will be a rare ssl error for freedom splice
 
-					newError("Setup splice update ticker").WriteToLog(session.ExportIDToError(ctx))
+					newError("Setup splice update ticker", GetSpliceCallersInContext(ctx)).WriteToLog(session.ExportIDToError(ctx))
 					ticker := time.NewTicker(10 * time.Second)
 					done := make(chan struct{})
 					defer func() {
@@ -495,10 +510,10 @@ func CopyRawConnIfExist(ctx context.Context, readerConn net.Conn, writerConn net
 						for {
 							select {
 							case <-done:
-								newError("Splice update done").WriteToLog(session.ExportIDToError(ctx))
+								newError("Splice update done", GetSpliceCallersInContext(ctx)).WriteToLog(session.ExportIDToError(ctx))
 								return
 							case <-ticker.C:
-								newError("Splice update tick").WriteToLog(session.ExportIDToError(ctx))
+								newError("Splice update tick", GetSpliceCallersInContext(ctx)).WriteToLog(session.ExportIDToError(ctx))
 								timer.Update()
 							}
 						}
@@ -515,10 +530,10 @@ func CopyRawConnIfExist(ctx context.Context, readerConn net.Conn, writerConn net
 						statWriter.Counter.Add(w) // user stats
 					}
 					if err != nil && errors.Cause(err) != io.EOF {
-						newError("CopyRawConn error", err).WriteToLog(session.ExportIDToError(ctx))
+						newError("CopyRawConn error", GetSpliceCallersInContext(ctx), err).WriteToLog(session.ExportIDToError(ctx))
 						return err
 					}
-					newError("CopyRawConn exit without error").WriteToLog(session.ExportIDToError(ctx))
+					newError("CopyRawConn exit without error", GetSpliceCallersInContext(ctx)).WriteToLog(session.ExportIDToError(ctx))
 					return nil
 				}
 				buffer, err := reader.ReadMultiBuffer()
@@ -537,9 +552,9 @@ func CopyRawConnIfExist(ctx context.Context, readerConn net.Conn, writerConn net
 			}
 		}
 	}
-	newError("CopyRawConn readv").WriteToLog(session.ExportIDToError(ctx))
+	newError("CopyRawConn readv", GetSpliceCallersInContext(ctx)).WriteToLog(session.ExportIDToError(ctx))
 	if err := buf.Copy(reader, writer, buf.UpdateActivity(timer), buf.AddToStatCounter(readCounter)); err != nil {
-		return newError("failed to process response").Base(err)
+		return newError("failed to process response", GetSpliceCallersInContext(ctx)).Base(err)
 	}
 	return nil
 }

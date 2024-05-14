@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 	"unsafe"
-	golog "log"
 
 	"github.com/xtls/xray-core/common"
 	"github.com/xtls/xray-core/common/buf"
@@ -316,8 +315,8 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection s
 			}
 
 			ctx, cancel := context.WithCancel(ctx)
-			nCancel := func () {
-				golog.Printf("inbound, ActivityTimer canceling, line 319")
+			nCancel := func() {
+				newError("inbound ActivityTimer canceling after inactivity in fallback").WriteToLog(session.ExportIDToError(ctx))
 				cancel()
 			}
 			timer := signal.CancelAfterInactivity(ctx, nCancel, sessionPolicy.Timeouts.ConnectionIdle)
@@ -507,9 +506,8 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection s
 	sessionPolicy = h.policyManager.ForLevel(request.User.Level)
 	ctx, cancel := context.WithCancel(ctx)
 
-	nCancel := func () {
-		golog.Printf("inbound, ActivityTimer canceling, line 505")
-		newError("inbound ActivityTimer canceling line 505").WriteToLog(session.ExportIDToError(ctx))
+	nCancel := func() {
+		newError("inbound ActivityTimer canceling after inactivity").WriteToLog(session.ExportIDToError(ctx))
 		cancel()
 	}
 	timer := signal.CancelAfterInactivity(ctx, nCancel, sessionPolicy.Timeouts.ConnectionIdle)
@@ -572,6 +570,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection s
 		var err error
 		if requestAddons.Flow == vless.XRV {
 			err = encoding.XtlsWrite(serverReader, clientWriter, timer, connection, trafficState, ctx)
+			newError("XtlsRead end", err).WriteToLog(session.ExportIDToError(ctx))
 		} else {
 			// from serverReader.ReadMultiBuffer to clientWriter.WriteMultiBufer
 			err = buf.Copy(serverReader, clientWriter, buf.UpdateActivity(timer))
