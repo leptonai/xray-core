@@ -25,8 +25,8 @@ vprotogen
 !infra/vprotogen/
 errorgen
 !common/errors/errorgen/
-*.dat
 .vscode
 /build_assets
 /xray-manager
 /xray
+/output/
