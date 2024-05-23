@@ -1,0 +1,107 @@
+{
+  "routing": {
+    "domainStrategy": "AsIs",
+    "balancers": [
+      {
+        "tag": "proxy-balancer",
+        "fallbackTag": "direct",
+        "selector": [
+          "proxy"
+        ],
+        "strategy": {
+          "type": "leastload",
+          "settings": {
+            "costs": [
+              {
+                "regexp": true,
+                "match": "weight(\\d+)"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "tag": "privatelink-balancer",
+        "fallbackTag": "direct",
+        "selector": [
+          "privatelink"
+        ],
+        "strategy": {
+          "type": "leastload",
+          "settings": {
+            "costs": [
+              {
+                "regexp": true,
+                "match": "weight(\\d+)"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "rules": [
+      {
+        "inboundTag": [
+          "api"
+        ],
+        "outboundTag": "api",
+        "type": "field"
+      },
+      {
+        "type": "field",
+        "inboundTag": [
+          "metrics_in"
+        ],
+        "outboundTag": "metrics_out"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "1.1.1.1"
+        ],
+        "balancerTag": "proxy-balancer"
+      },
+      {
+        "type": "field",
+        "inboundTag": [
+          "transparent"
+        ],
+        "domains": [
+          "domain:r2.dev",
+          "domain:tailscale.com",
+          "domain:lepton.ing",
+          "domain:r2.cloudflarestorage.com",
+          "domain:ufileos.com",
+          "domain:juicefs.com",
+          "domain:hf-mirror.com"
+        ],
+        "network": "tcp",
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "inboundTag": [
+          "transparent"
+        ],
+        "domains": [
+          "domain:eks.amazonaws.com"
+        ],
+        "network": "tcp",
+        "balancerTag": "privatelink-balancer"
+      },
+      {
+        "type": "field",
+        "inboundTag": [
+          "transparent"
+        ],
+        "network": "tcp",
+        "balancerTag": "proxy-balancer"
+      },
+      {
+        "type": "field",
+        "network": "tcp,udp",
+        "outboundTag": "direct"
+      }
+    ]
+  }
+}

@@ -28,3 +28,5 @@ errorgen
 *.dat
 .vscode
 /build_assets
+/xray-manager
+/xray

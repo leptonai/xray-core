@@ -1,0 +1,15 @@
+[Unit]
+Description=XRay-Manager Service
+After=network.target nss-lookup.target kubelet-network.service xray.service
+Before=kubelet.service
+
+[Service]
+User=root
+NoNewPrivileges=true
+ExecStart=/usr/local/bin/xray-manager sync --xray-confdir /usr/local/etc/xray/conf.d --xray-server 127.0.0.1:18080
+Restart=on-failure
+RestartPreventExitStatus=23
+LimitNOFILE=40000
+
+[Install]
+WantedBy=multi-user.target

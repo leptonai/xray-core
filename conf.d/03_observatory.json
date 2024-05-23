@@ -1,0 +1,10 @@
+{
+  "observatory": {
+    "subjectSelector": [
+      "proxy",
+      "privatelink"
+    ],
+    "probeURL": "https://www.google.com/generate_204",
+    "probeInterval": "30s"
+  }
+}

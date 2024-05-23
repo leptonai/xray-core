@@ -1,0 +1,19 @@
+[Unit]
+Description=XRay Service
+Documentation=https://github.com/XTLS/Xray-core
+After=network.target nss-lookup.target kubelet-network.service
+Before=kubelet.service
+
+[Service]
+User=root
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+ExecStart=/usr/local/bin/xray run -confdir /usr/local/etc/xray/conf.d
+ExecStartPost=/usr/local/etc/xray/xray-iptables.bash
+Restart=on-failure
+RestartPreventExitStatus=23
+LimitNOFILE=40000
+
+[Install]
+WantedBy=multi-user.target
