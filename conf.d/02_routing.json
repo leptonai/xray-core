@@ -84,7 +84,8 @@
           "transparent"
         ],
         "domains": [
-          "domain:eks.amazonaws.com"
+          "domain:eks.amazonaws.com",
+          "domain:sts.us-west-2.amazonaws.com"
         ],
         "network": "tcp",
         "balancerTag": "privatelink-balancer"
