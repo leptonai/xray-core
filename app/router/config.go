@@ -139,6 +139,21 @@ func (br *BalancingRule) Build(ohm outbound.Manager, dispatcher routing.Dispatch
 			fallbackTag: br.FallbackTag,
 			ohm:         ohm,
 		}, nil
+	case "wrr":
+		i, err := br.StrategySettings.GetInstance()
+		if err != nil {
+			return nil, err
+		}
+		s, ok := i.(*StrategyWeightedRoundRobinConfig)
+		if !ok {
+			return nil, newError("not a StrategyWeightedRoundRobinConfig").AtError()
+		}
+		return &Balancer{
+			selectors:   br.OutboundSelector,
+			strategy:    NewWeightedRoundRobinStrategy(s),
+			fallbackTag: br.FallbackTag,
+			ohm:         ohm,
+		}, nil
 	case "leastload":
 		i, err := br.StrategySettings.GetInstance()
 		if err != nil {

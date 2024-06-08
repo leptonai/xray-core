@@ -2,25 +2,27 @@ package conf
 
 import (
 	"google.golang.org/protobuf/proto"
-	
-	"github.com/xtls/xray-core/app/router"
+
 	"github.com/xtls/xray-core/app/observatory/burst"
+	"github.com/xtls/xray-core/app/router"
 	"github.com/xtls/xray-core/infra/conf/cfgcommon/duration"
 )
 
 const (
-	strategyRandom     string = "random"
-	strategyLeastPing  string = "leastping"
-	strategyRoundRobin string = "roundrobin"
-	strategyLeastLoad  string = "leastload"
+	strategyRandom             string = "random"
+	strategyLeastPing          string = "leastping"
+	strategyRoundRobin         string = "roundrobin"
+	strategyLeastLoad          string = "leastload"
+	strategyWeightedRoundRobin string = "wrr"
 )
 
 var (
 	strategyConfigLoader = NewJSONConfigLoader(ConfigCreatorCache{
-		strategyRandom:     func() interface{} { return new(strategyEmptyConfig) },
-		strategyLeastPing:  func() interface{} { return new(strategyEmptyConfig) },
-		strategyRoundRobin: func() interface{} { return new(strategyEmptyConfig) },
-		strategyLeastLoad:  func() interface{} { return new(strategyLeastLoadConfig) },
+		strategyRandom:             func() interface{} { return new(strategyEmptyConfig) },
+		strategyLeastPing:          func() interface{} { return new(strategyEmptyConfig) },
+		strategyRoundRobin:         func() interface{} { return new(strategyEmptyConfig) },
+		strategyLeastLoad:          func() interface{} { return new(strategyLeastLoadConfig) },
+		strategyWeightedRoundRobin: func() interface{} { return new(strategyWeightedRoundRobinConfig) },
 	}, "type", "settings")
 )
 
@@ -44,12 +46,17 @@ type strategyLeastLoadConfig struct {
 	Tolerance float64 `json:"tolerance,omitempty"`
 }
 
+type strategyWeightedRoundRobinConfig struct {
+	// weight settings
+	Costs []*router.StrategyWeight `json:"costs,omitempty"`
+}
+
 // healthCheckSettings holds settings for health Checker
 type healthCheckSettings struct {
-	Destination   string   `json:"destination"`
-	Connectivity  string   `json:"connectivity"`
+	Destination   string            `json:"destination"`
+	Connectivity  string            `json:"connectivity"`
 	Interval      duration.Duration `json:"interval"`
-	SamplingCount int      `json:"sampling"`
+	SamplingCount int               `json:"sampling"`
 	Timeout       duration.Duration `json:"timeout"`
 }
 
@@ -89,5 +96,12 @@ func (v *strategyLeastLoadConfig) Build() (proto.Message, error) {
 		}
 		config.Baselines = append(config.Baselines, int64(b))
 	}
+	return config, nil
+}
+
+// Build implements Buildable.
+func (v *strategyWeightedRoundRobinConfig) Build() (proto.Message, error) {
+	config := &router.StrategyWeightedRoundRobinConfig{}
+	config.Costs = v.Costs
 	return config, nil
 }
