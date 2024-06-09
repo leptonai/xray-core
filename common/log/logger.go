@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"gopkg.in/natefinch/lumberjack.v2"
+
 	"github.com/xtls/xray-core/common/platform"
 	"github.com/xtls/xray-core/common/signal/done"
 	"github.com/xtls/xray-core/common/signal/semaphore"
@@ -129,17 +131,16 @@ func (w *consoleLogWriter) Close() error {
 }
 
 type fileLogWriter struct {
-	file   *os.File
-	logger *log.Logger
+	logger *lumberjack.Logger
 }
 
 func (w *fileLogWriter) Write(s string) error {
-	w.logger.Print(s)
-	return nil
+	_, err := w.logger.Write([]byte(s))
+	return err
 }
 
 func (w *fileLogWriter) Close() error {
-	return w.file.Close()
+	return w.logger.Close()
 }
 
 // CreateStdoutLogWriter returns a LogWriterCreator that creates LogWriter for stdout.
@@ -168,13 +169,15 @@ func CreateFileLogWriter(path string) (WriterCreator, error) {
 	}
 	file.Close()
 	return func() Writer {
-		file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o600)
-		if err != nil {
-			return nil
+		logger := &lumberjack.Logger{
+			Filename:   path,
+			MaxSize:    500, // megabytes
+			MaxBackups: 7,
+			MaxAge:     7,    //days
+			Compress:   true, // disabled by default
 		}
 		return &fileLogWriter{
-			file:   file,
-			logger: log.New(file, "", log.Ldate|log.Ltime),
+			logger: logger,
 		}
 	}, nil
 }
