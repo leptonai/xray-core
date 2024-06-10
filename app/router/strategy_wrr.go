@@ -79,45 +79,7 @@ func (s *WeightedRoundRobinStrategy) PickOutbound(candidates []string) string {
 		return ""
 	}
 
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	for tag := range s.peers {
-		if _, ok := peerTags[tag]; !ok {
-			delete(s.peers, tag)
-		}
-	}
-
-	total := 0
-	var best *peer
-	for tag, alive := range peerTags {
-		if !alive {
-			continue
-		}
-		p := s.peers[tag]
-		if p == nil {
-			p = s.addPeer(tag)
-		}
-
-		p.currentWeight += p.effectiveWeight
-		total += p.effectiveWeight
-		if p.effectiveWeight < p.weight {
-			p.effectiveWeight++
-		}
-
-		if best == nil ||
-			p.currentWeight > best.currentWeight {
-			best = p
-		}
-	}
-
-	if best == nil {
-		// goes to fallbackTag
-		return ""
-	}
-
-	best.currentWeight -= total
-	return best.tag
+	return s.selectPeer(peerTags)
 }
 
 func (s *WeightedRoundRobinStrategy) selectPeer(peerTags map[string]bool) string {
