@@ -44,14 +44,14 @@ func TestWRR_selectPeer(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var costs []*StrategyWeight
+			var strategyWeights []*StrategyWeight
 			peerTags := map[string]bool{}
 			for i, v := range tt.candidateWeights {
 				tag := fmt.Sprintf("tag-%d", i)
-				costs = append(costs, &StrategyWeight{Match: tag, Value: float32(v)})
+				strategyWeights = append(strategyWeights, &StrategyWeight{Match: tag, Value: float32(v)})
 				peerTags[tag] = true
 			}
-			wrr := NewWeightedRoundRobinStrategy(&StrategyWeightedRoundRobinConfig{Costs: costs})
+			wrr := NewWeightedRoundRobinStrategy(&StrategyWeightedRoundRobinConfig{Weights: strategyWeights})
 			var results []string
 			counts := map[string]int{}
 			for i := 0; i < tt.times; i++ {
@@ -108,12 +108,12 @@ func TestWRR_Observatory(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var costs []*StrategyWeight
+			var strategyWeights []*StrategyWeight
 			var peerTags []string
 			observationResult := observatory.ObservationResult{}
 			for i, v := range tt.candidateWeights {
 				tag := fmt.Sprintf("tag-%d", i)
-				costs = append(costs, &StrategyWeight{Match: tag, Value: float32(v)})
+				strategyWeights = append(strategyWeights, &StrategyWeight{Match: tag, Value: float32(v)})
 				peerTags = append(peerTags, tag)
 				alive := true
 				if _, ok := tt.unhealthyTags[tag]; ok {
@@ -124,7 +124,7 @@ func TestWRR_Observatory(t *testing.T) {
 					Alive:       alive,
 				})
 			}
-			wrr := NewWeightedRoundRobinStrategy(&StrategyWeightedRoundRobinConfig{Costs: costs})
+			wrr := NewWeightedRoundRobinStrategy(&StrategyWeightedRoundRobinConfig{Weights: strategyWeights})
 			wrr.observatory = &FakeObservatory{
 				result: observationResult,
 			}

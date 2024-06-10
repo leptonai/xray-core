@@ -28,7 +28,7 @@ type peer struct {
 
 func NewWeightedRoundRobinStrategy(settings *StrategyWeightedRoundRobinConfig) *WeightedRoundRobinStrategy {
 	return &WeightedRoundRobinStrategy{
-		weightManager: NewWeightManager(settings.Costs, 1, nil),
+		weightManager: NewWeightManager(settings.Weights, 1, nil),
 		peers:         make(map[string]*peer),
 	}
 }

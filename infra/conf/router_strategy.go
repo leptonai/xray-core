@@ -48,7 +48,7 @@ type strategyLeastLoadConfig struct {
 
 type strategyWeightedRoundRobinConfig struct {
 	// weight settings
-	Costs []*router.StrategyWeight `json:"costs,omitempty"`
+	Weights []*router.StrategyWeight `json:"weights,omitempty"`
 }
 
 // healthCheckSettings holds settings for health Checker
@@ -102,6 +102,6 @@ func (v *strategyLeastLoadConfig) Build() (proto.Message, error) {
 // Build implements Buildable.
 func (v *strategyWeightedRoundRobinConfig) Build() (proto.Message, error) {
 	config := &router.StrategyWeightedRoundRobinConfig{}
-	config.Costs = v.Costs
+	config.Weights = v.Weights
 	return config, nil
 }

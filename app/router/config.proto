@@ -155,7 +155,7 @@ message StrategyLeastLoadConfig {
 
 message StrategyWeightedRoundRobinConfig {
   // weight settings
-  repeated StrategyWeight costs = 2;
+  repeated StrategyWeight weights = 2;
 }
 
 message Config {
