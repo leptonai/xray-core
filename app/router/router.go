@@ -4,7 +4,9 @@ package router
 
 import (
 	"context"
-	sync "sync"
+	"maps"
+	"slices"
+	"sync"
 
 	"github.com/xtls/xray-core/common"
 	"github.com/xtls/xray-core/common/serial"
@@ -25,7 +27,7 @@ type Router struct {
 	ctx        context.Context
 	ohm        outbound.Manager
 	dispatcher routing.Dispatcher
-	mu         sync.Mutex
+	mu         sync.RWMutex
 }
 
 // Route is an implementation of routing.Route.
@@ -108,12 +110,16 @@ func (r *Router) ReloadRules(config *Config, shouldAppend bool) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	var balancers map[string]*Balancer
+	var rules []*Rule
 	if !shouldAppend {
-		r.balancers = make(map[string]*Balancer, len(config.BalancingRule))
-		r.rules = make([]*Rule, 0, len(config.Rule))
+		balancers = make(map[string]*Balancer)
+	} else {
+		balancers = maps.Clone(r.balancers)
+		rules = slices.Clone(r.rules)
 	}
 	for _, rule := range config.BalancingRule {
-		_, found := r.balancers[rule.Tag]
+		_, found := balancers[rule.Tag]
 		if found {
 			return newError("duplicate balancer tag")
 		}
@@ -122,11 +128,11 @@ func (r *Router) ReloadRules(config *Config, shouldAppend bool) error {
 			return err
 		}
 		balancer.InjectContext(r.ctx)
-		r.balancers[rule.Tag] = balancer
+		balancers[rule.Tag] = balancer
 	}
 
 	for _, rule := range config.Rule {
-		if r.RuleExists(rule.GetRuleTag()) {
+		if RuleExists(rules, rule.GetRuleTag()) {
 			return newError("duplicate ruleTag ", rule.GetRuleTag())
 		}
 		cond, err := rule.BuildCondition()
@@ -140,21 +146,24 @@ func (r *Router) ReloadRules(config *Config, shouldAppend bool) error {
 		}
 		btag := rule.GetBalancingTag()
 		if len(btag) > 0 {
-			brule, found := r.balancers[btag]
+			brule, found := balancers[btag]
 			if !found {
 				return newError("balancer ", btag, " not found")
 			}
 			rr.Balancer = brule
 		}
-		r.rules = append(r.rules, rr)
+		rules = append(rules, rr)
 	}
+
+	r.balancers = balancers
+	r.rules = rules
 
 	return nil
 }
 
-func (r *Router) RuleExists(tag string) bool {
+func RuleExists(rules []*Rule, tag string) bool {
 	if tag != "" {
-		for _, rule := range r.rules {
+		for _, rule := range rules {
 			if rule.RuleTag == tag {
 				return true
 			}
@@ -191,10 +200,8 @@ func (r *Router) pickRouteInternal(ctx routing.Context) (*Rule, routing.Context,
 		ctx = routing_dns.ContextWithDNSClient(ctx, r.dns)
 	}
 
-	for _, rule := range r.rules {
-		if rule.Apply(ctx) {
-			return rule, ctx, nil
-		}
+	if rule := r.applyRules(ctx); rule != nil {
+		return rule, ctx, nil
 	}
 
 	if r.domainStrategy != Config_IpIfNonMatch || len(ctx.GetTargetDomain()) == 0 || skipDNSResolve {
@@ -204,13 +211,24 @@ func (r *Router) pickRouteInternal(ctx routing.Context) (*Rule, routing.Context,
 	ctx = routing_dns.ContextWithDNSClient(ctx, r.dns)
 
 	// Try applying rules again if we have IPs.
-	for _, rule := range r.rules {
-		if rule.Apply(ctx) {
-			return rule, ctx, nil
-		}
+	if rule := r.applyRules(ctx); rule != nil {
+		return rule, ctx, nil
 	}
 
 	return nil, ctx, common.ErrNoClue
+}
+
+func (r *Router) applyRules(ctx routing.Context) *Rule {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	for _, rule := range r.rules {
+		if rule.Apply(ctx) {
+			return rule
+		}
+	}
+
+	return nil
 }
 
 // Start implements common.Runnable.
