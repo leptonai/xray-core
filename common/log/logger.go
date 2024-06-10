@@ -131,16 +131,17 @@ func (w *consoleLogWriter) Close() error {
 }
 
 type fileLogWriter struct {
-	logger *lumberjack.Logger
+	logCloser io.Closer
+	logger    *log.Logger
 }
 
 func (w *fileLogWriter) Write(s string) error {
-	_, err := w.logger.Write([]byte(s))
-	return err
+	w.logger.Print(s)
+	return nil
 }
 
 func (w *fileLogWriter) Close() error {
-	return w.logger.Close()
+	return w.logCloser.Close()
 }
 
 // CreateStdoutLogWriter returns a LogWriterCreator that creates LogWriter for stdout.
@@ -177,7 +178,8 @@ func CreateFileLogWriter(path string) (WriterCreator, error) {
 			Compress:   true, // disabled by default
 		}
 		return &fileLogWriter{
-			logger: logger,
+			logCloser: logger,
+			logger:    log.New(logger, "", log.Ldate|log.Ltime),
 		}
 	}, nil
 }
