@@ -27,23 +27,23 @@ func (t *ActivityTimer) Update() {
 	default:
 	}
 
-	log.RecordWithSeverity(log.Severity_Debug, "ActivityTimer updating finished")
+	log.Println(log.Severity_Debug, "ActivityTimer updating finished")
 }
 
 func (t *ActivityTimer) check() error {
 	if t.checkTask != nil {
-		log.RecordWithSeverity(log.Severity_Debug, "checking with interval", t.checkTask.Interval)
+		log.Println(log.Severity_Debug, "checking with interval", t.checkTask.Interval)
 	}
 
 	select {
 	case <-t.updated:
-		log.RecordWithSeverity(log.Severity_Debug, "ActivityTimer checking, activity detected")
+		log.Println(log.Severity_Debug, "ActivityTimer checking, activity detected")
 	default:
-		log.RecordWithSeverity(log.Severity_Debug, "ActivityTimer checking, no activity detected, calling finish")
+		log.Println(log.Severity_Debug, "ActivityTimer checking, no activity detected, calling finish")
 		t.finish()
 	}
 
-	log.RecordWithSeverity(log.Severity_Debug, "ActivityTimer checking finished")
+	log.Println(log.Severity_Debug, "ActivityTimer checking finished")
 	return nil
 }
 
@@ -51,24 +51,24 @@ func (t *ActivityTimer) finish() {
 	t.Lock()
 	defer t.Unlock()
 
-	log.RecordWithSeverity(log.Severity_Debug, "ActivityTimer finishing")
+	log.Println(log.Severity_Debug, "ActivityTimer finishing")
 
 	if t.onTimeout != nil {
-		log.RecordWithSeverity(log.Severity_Debug, "ActivityTimer calling onTimeout")
+		log.Println(log.Severity_Debug, "ActivityTimer calling onTimeout")
 		t.onTimeout()
 		t.onTimeout = nil
 	}
 	if t.checkTask != nil {
-		log.RecordWithSeverity(log.Severity_Debug, "ActivityTimer closing checkTask", t.checkTask.Interval)
+		log.Println(log.Severity_Debug, "ActivityTimer closing checkTask", t.checkTask.Interval)
 		t.checkTask.Close()
 		t.checkTask = nil
 	}
 
-	log.RecordWithSeverity(log.Severity_Debug, "ActivityTimer finished")
+	log.Println(log.Severity_Debug, "ActivityTimer finished")
 }
 
 func (t *ActivityTimer) SetTimeout(timeout time.Duration) {
-	log.RecordWithSeverity(log.Severity_Debug, "ActivityTimer SetTimeout", timeout)
+	log.Println(log.Severity_Debug, "ActivityTimer SetTimeout", timeout)
 
 	if timeout == 0 {
 		t.finish()
@@ -90,7 +90,7 @@ func (t *ActivityTimer) SetTimeout(timeout time.Duration) {
 	t.Update()
 	common.Must(checkTask.Start())
 
-	log.RecordWithSeverity(log.Severity_Debug, "ActivityTimer SetTimeout finished")
+	log.Println(log.Severity_Debug, "ActivityTimer SetTimeout finished")
 }
 
 func CancelAfterInactivity(ctx context.Context, cancel context.CancelFunc, timeout time.Duration) *ActivityTimer {
@@ -98,7 +98,7 @@ func CancelAfterInactivity(ctx context.Context, cancel context.CancelFunc, timeo
 		updated:   make(chan struct{}, 1),
 		onTimeout: cancel,
 	}
-	log.RecordWithSeverity(log.Severity_Debug, "ActivityTimer CancelAfterInactivity", timeout)
+	log.Println(log.Severity_Debug, "ActivityTimer CancelAfterInactivity", timeout)
 	timer.SetTimeout(timeout)
 	return timer
 }

@@ -33,10 +33,10 @@ func Record(msg Message) {
 	logHandler.Handle(msg)
 }
 
-func RecordWithSeverity(severity Severity, format string, args ...interface{}) {
+func Println(severity Severity, args ...interface{}) {
 	Record(&GeneralMessage{
 		Severity: severity,
-		Content:  fmt.Sprintf(format, args...),
+		Content:  fmt.Sprintln(args...),
 	})
 }
 
