@@ -1,6 +1,7 @@
 package log // import "github.com/xtls/xray-core/common/log"
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/xtls/xray-core/common/serial"
@@ -30,6 +31,13 @@ func (m *GeneralMessage) String() string {
 // Record writes a message into log stream.
 func Record(msg Message) {
 	logHandler.Handle(msg)
+}
+
+func Println(severity Severity, args ...interface{}) {
+	Record(&GeneralMessage{
+		Severity: severity,
+		Content:  fmt.Sprintln(args...),
+	})
 }
 
 var logHandler syncHandler
