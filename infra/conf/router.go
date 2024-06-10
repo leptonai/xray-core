@@ -6,11 +6,12 @@ import (
 	"strconv"
 	"strings"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/xtls/xray-core/app/router"
 	"github.com/xtls/xray-core/common/net"
 	"github.com/xtls/xray-core/common/platform/filesystem"
 	"github.com/xtls/xray-core/common/serial"
-	"google.golang.org/protobuf/proto"
 )
 
 type RouterRulesConfig struct {
@@ -44,7 +45,7 @@ func (r *BalancingRule) Build() (*router.BalancingRule, error) {
 	switch r.Strategy.Type {
 	case "":
 		r.Strategy.Type = strategyRandom
-	case strategyRandom, strategyLeastLoad, strategyLeastPing, strategyRoundRobin:
+	case strategyRandom, strategyLeastLoad, strategyLeastPing, strategyRoundRobin, strategyWeightedRoundRobin:
 	default:
 		return nil, newError("unknown balancing strategy: " + r.Strategy.Type)
 	}

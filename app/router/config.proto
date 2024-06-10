@@ -153,6 +153,11 @@ message StrategyLeastLoadConfig {
   float tolerance = 6;
 }
 
+message StrategyWeightedRoundRobinConfig {
+  // weight settings
+  repeated StrategyWeight weights = 2;
+}
+
 message Config {
   enum DomainStrategy {
     // Use domain as is.
