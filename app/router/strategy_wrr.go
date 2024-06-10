@@ -105,6 +105,12 @@ func (s *WeightedRoundRobinStrategy) selectPeer(peerTags map[string]bool) string
 
 		p.currentWeight += p.effectiveWeight
 		total += p.effectiveWeight
+		//
+		// NOTE: in the version, p.effectiveWeight is always less than p.weight.
+		// So, the following condition is always true. But we keep it here for future use.
+		// In Nginx, when the peer encounters any error, the effectiveWeight can be adjusted.
+		// More details please refer to https://github.com/nginx/nginx/blob/e734df6664e70f118ca3140bcef6d4f1750fa8fa/src/stream/ngx_stream_upstream_round_robin.c#L642-L649
+		//
 		if p.effectiveWeight < p.weight {
 			p.effectiveWeight++
 		}
