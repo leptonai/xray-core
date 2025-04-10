@@ -1,7 +1,7 @@
 module github.com/xtls/xray-core
 
 go 1.22.0
-toolchain go1.23.7
+toolchain go1.24.1
 
 require (
 	github.com/OmarTariq612/goech v0.0.0-20240405204721-8e2e1dafd3a0
@@ -15,7 +15,7 @@ require (
 	github.com/pires/go-proxyproto v0.7.0
 	github.com/quic-go/quic-go v0.48.2
 	github.com/refraction-networking/utls v1.6.6
-	github.com/sagernet/sing v0.3.8
+	github.com/sagernet/sing v0.6.6
 	github.com/sagernet/sing-shadowsocks v0.2.6
 	github.com/seiflotfy/cuckoofilter v0.0.0-20220411075957-e3b120b3f5fb
 	github.com/stretchr/testify v1.9.0
