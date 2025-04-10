@@ -1,11 +1,11 @@
 module github.com/xtls/xray-core
 
 go 1.22.0
-toolchain go1.23.7
+toolchain go1.24.1
 
 require (
 	github.com/OmarTariq612/goech v0.0.0-20240405204721-8e2e1dafd3a0
-	github.com/cloudflare/circl v1.3.8
+	github.com/cloudflare/circl v1.6.1
 	github.com/ghodss/yaml v1.0.1-0.20220118164431-d8423dcdf344
 	github.com/golang/mock v1.7.0-rc.1
 	github.com/google/go-cmp v0.6.0
